@@ -186,6 +186,12 @@ public class CsvTest {
     sql("smart", "select name from DEPTS").ok();
   }
 
+  @Test public void testSelectWhere() throws SQLException {
+    final String sql = "select empno, gender, name from EMPS\n"
+            + " where gender = 'M' and empno > 100";
+    sql("smart", sql).ok();
+  }
+
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-898">[CALCITE-898]
    * Type inference multiplying Java long by SQL INTEGER</a>. */
