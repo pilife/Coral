@@ -217,6 +217,24 @@ public class JdbcRules {
     return rules(out, RelFactories.LOGICAL_BUILDER);
   }
 
+    /**
+     * for jdbc convention is not singleton, we need to
+     * get the jdbc#A -> jdbc#B ... format converter rule
+     * @param exist exist jdbc conventions
+     * @return converter rules
+     */
+  public static List<RelOptRule> rules(Set<JdbcConvention> exist) {
+      List<RelOptRule> rules = new ArrayList<>();
+      for (JdbcConvention in: exist){
+          for (JdbcConvention out: exist){
+              if (in != out){
+                  rules.add(new JdbcToJdbcConverterRule(in, out, RelFactories.LOGICAL_BUILDER));
+              }
+          }
+      }
+      return ImmutableList.copyOf(rules);
+  }
+
   public static List<RelOptRule> rules(JdbcConvention out,
       RelBuilderFactory relBuilderFactory) {
     return ImmutableList.of(

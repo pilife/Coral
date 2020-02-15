@@ -24,6 +24,10 @@ import org.apache.calcite.rel.rules.FilterSetOpTransposeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.sql.SqlDialect;
 
+import javax.sql.DataSource;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Calling convention for relational operations that occur in a JDBC
  * database.
@@ -39,7 +43,7 @@ import org.apache.calcite.sql.SqlDialect;
  * (That would involve asking database B to open a database link to database
  * A.)</p>
  *
- * <p>As a result, converter rules from and two this convention need to be
+ * <p>As a result, converter rules from and to this convention need to be
  * instantiated, at the start of planning, for each JDBC database in play.</p>
  */
 public class JdbcConvention extends Convention.Impl {
@@ -47,23 +51,37 @@ public class JdbcConvention extends Convention.Impl {
    * calling convention. */
   public static final double COST_MULTIPLIER = 0.8d;
 
+  public static Set<JdbcConvention> exist = new HashSet<>();
+
   public final SqlDialect dialect;
   public final Expression expression;
 
-  public JdbcConvention(SqlDialect dialect, Expression expression,
+  public final DataSource dataSource;
+  public JdbcSchema jdbcSchema;
+
+  public JdbcConvention(SqlDialect dialect, Expression expression, DataSource dataSource,
       String name) {
     super("JDBC." + name, JdbcRel.class);
     this.dialect = dialect;
     this.expression = expression;
+    this.dataSource = dataSource;
+    exist.add(this);
   }
 
-  public static JdbcConvention of(SqlDialect dialect, Expression expression,
-      String name) {
-    return new JdbcConvention(dialect, expression, name);
+  public static JdbcConvention of(SqlDialect dialect, Expression expression, DataSource dataSource,
+                                  String name) {
+    return new JdbcConvention(dialect, expression, dataSource, name);
+  }
+
+  public void setJdbcSchema(JdbcSchema jdbcSchema){
+    this.jdbcSchema = jdbcSchema;
   }
 
   @Override public void register(RelOptPlanner planner) {
     for (RelOptRule rule : JdbcRules.rules(this)) {
+      planner.addRule(rule);
+    }
+    for (RelOptRule rule : JdbcRules.rules(exist)) {
       planner.addRule(rule);
     }
     planner.addRule(FilterSetOpTransposeRule.INSTANCE);

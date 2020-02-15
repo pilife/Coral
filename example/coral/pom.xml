@@ -20,14 +20,14 @@ limitations under the License.
   <parent>
     <groupId>org.apache.calcite</groupId>
     <artifactId>calcite-example</artifactId>
-    <version>1.21.0-SNAPSHOT</version>
+    <version>1.21.0</version>
   </parent>
 
   <artifactId>calcite-example-coral</artifactId>
   <packaging>jar</packaging>
-  <version>1.21.0-SNAPSHOT</version>
-  <name>Calcite Example CSV</name>
-  <description>An example Calcite provider that reads CSV files</description>
+  <version>1.21.0</version>
+  <name>Calcite Example Coral</name>
+  <description>A temporary module for coral test</description>
 
   <properties>
     <top.dir>${project.basedir}/../..</top.dir>
@@ -46,7 +46,6 @@ limitations under the License.
       <groupId>org.apache.calcite</groupId>
       <artifactId>calcite-linq4j</artifactId>
     </dependency>
-
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
@@ -160,7 +159,7 @@ limitations under the License.
               <goal>analyze-only</goal>
             </goals>
             <configuration>
-              <failOnWarning>true</failOnWarning>
+              <failOnWarning>false</failOnWarning>
               <!-- ignore "unused but declared" warnings -->
               <ignoredUnusedDeclaredDependencies>
                 <ignoredUnusedDeclaredDependency>sqlline:sqlline</ignoredUnusedDeclaredDependency>

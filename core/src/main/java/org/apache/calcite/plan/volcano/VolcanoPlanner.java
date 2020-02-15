@@ -224,7 +224,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   private final Map<List<String>, RelOptLattice> latticeByName =
       new LinkedHashMap<>();
 
-  final Map<RelNode, Provenance> provenanceMap;
+  final Map<RelNode, Provenance> provenanceMap; // 和ruleCallStack搭配使用，记录生成这个RelNode的Rule
 
   final Deque<VolcanoRuleCall> ruleCallStack = new ArrayDeque<>();
 
@@ -645,12 +645,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       LOGGER.trace(sw.toString());
     }
     RelNode cheapest = root.buildCheapestPlan(this);
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info(
           "Cheapest plan:\n{}", RelOptUtil.toString(cheapest, SqlExplainLevel.ALL_ATTRIBUTES));
 
       if (!provenanceMap.isEmpty()) {
-        LOGGER.debug("Provenance:\n{}", provenance(cheapest));
+        LOGGER.info("Provenance:\n{}", provenance(cheapest));
       }
     }
     return cheapest;

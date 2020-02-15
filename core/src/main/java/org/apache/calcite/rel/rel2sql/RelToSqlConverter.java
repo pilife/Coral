@@ -17,7 +17,9 @@
 package org.apache.calcite.rel.rel2sql;
 
 import org.apache.calcite.adapter.jdbc.JdbcTable;
+import org.apache.calcite.adapter.jdbc.JdbcToJdbcConverter;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -820,6 +822,20 @@ public class RelToSqlConverter extends SqlImplementor
     final List<SqlNode> operands = createAsFullOperands(e.getRowType(), unnestNode, x.neededAlias);
     final SqlNode asNode = SqlStdOperatorTable.AS.createCall(POS, operands);
     return result(asNode, ImmutableList.of(Clause.FROM), e, null);
+  }
+
+  /**
+   * @see #dispatch
+   * target: 此处visit是为了生成sql语句
+   * 1. invoke the migration job for converter
+   * 2. generate sql result
+   * todo JdbcToJdbcConverter -> ConverterImpl，同时将doMigration方法抽象到接口中
+   */
+  public Result visit(JdbcToJdbcConverter e){
+    // do the migration job
+    JdbcTable jdbcTable = e.doMigration();
+    return result(jdbcTable.tableName(),
+            ImmutableList.of(Clause.FROM), e, null);
   }
 
   /**
