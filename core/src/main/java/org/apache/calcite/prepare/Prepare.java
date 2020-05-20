@@ -18,7 +18,9 @@ package org.apache.calcite.prepare;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.adapter.jdbc.util.GlobalInfo;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
@@ -32,6 +34,9 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.ViewExpanders;
+import org.apache.calcite.plan.dqn.CostModel;
+import org.apache.calcite.plan.dqn.EpisodeSample;
+import org.apache.calcite.plan.dqn.OptimizerMLP;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -185,7 +190,7 @@ public abstract class Prepare {
     };
     visitor.go(root.rel);
 
-    final Program program = getProgram();
+    final Program program = getProgram(root);
     final RelNode rootRel4 = program.run(
         planner, root.rel, desiredTraits, materializationList, latticeList);
     if (LOGGER.isDebugEnabled()) {
@@ -196,15 +201,37 @@ public abstract class Prepare {
     return root.withRel(rootRel4);
   }
 
-  protected Program getProgram() {
+  protected Program getProgram(RelRoot root) {
     // Allow a test to override the default program.
     final Holder<Program> holder = Holder.of(null);
     Hook.PROGRAM.run(holder);
     if (holder.get() != null) {
       return holder.get();
     }
+    if (GlobalInfo.getInstance().getFixedPlatform() != null) {
+      // do fixed platform query
+      LOGGER.info("query with fixed platform = {}", GlobalInfo.getInstance().getFixedPlatform());
+      return Programs.fixedPlatform();
+    }
 
-    return Programs.standard();
+//    return Programs.heuristicJoinOrder(true);
+//    if (GlobalInfo.queryCount.get() % 100 == 0){ // update dqn model each time
+//          return Programs.dqn();
+//    }
+    CalciteConnectionConfig config = GlobalInfo.getInstance().getConfigThreadLocal().get();
+    int joinThreshold = config.joinThreshold();
+    int heuristicThreshold = config.heuristicThreshold();
+    final int joinCount = RelOptUtil.countJoins(root.rel) + 1;
+    if (joinCount > joinThreshold && OptimizerMLP.isReady) { // 根据join规模和优化器状态选择优化方式
+      LOGGER.info("Optimizer choice = DQN");
+      return Programs.dqn();
+    } else if ((joinCount < heuristicThreshold && !OptimizerMLP.isReady) || joinCount <= joinThreshold) {
+      LOGGER.info("Optimizer choice = STANDARD");
+      return Programs.standard();
+    } else {
+      LOGGER.info("Optimizer choice = HEURISTIC");
+      return Programs.heuristicJoinOrder(true);
+    }
   }
 
   protected RelTraitSet getDesiredRootTraitSet(RelRoot root) {
@@ -242,6 +269,7 @@ public abstract class Prepare {
       Class runtimeContextClass,
       SqlValidator validator,
       boolean needsValidation) {
+    this.timingTracer = new CalciteTimingTracer(LOGGER, "start prepare sql");
     init(runtimeContextClass);
 
     final SqlToRelConverter.ConfigBuilder builder =
@@ -322,6 +350,11 @@ public abstract class Prepare {
     if (timingTracer != null) {
       timingTracer.traceTime("end optimization");
     }
+
+    // transform root to dqn training example && save it
+    // todo [coral] use thread pool
+    EpisodeSample.rel2MDP(root.rel, true, CostModel.COST_MODEL_1).mdp2DataFile();
+    GlobalInfo.queryCount.incrementAndGet();
 
     // For transformation from DML -> DML, use result of rewrite
     // (e.g. UPDATE -> MERGE).  For anything else (e.g. CALL -> SELECT),

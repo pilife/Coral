@@ -170,7 +170,7 @@ public interface CalcitePrepare {
     private static SparkHandler createHandler() {
       try {
         final Class<?> clazz =
-            Class.forName("org.apache.calcite.adapter.spark.SparkHandlerImpl");
+            Class.forName("org.apache.calcite.adapter.spark.SparkHandlerImpl"); // for this class is in other module
         Method method = clazz.getMethod("instance");
         return (CalcitePrepare.SparkHandler) method.invoke(null);
       } catch (ClassNotFoundException e) {

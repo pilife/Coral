@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.adapter.jdbc;
 
+import org.apache.calcite.adapter.jdbc.util.GlobalInfo;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.Contexts;
@@ -215,6 +216,28 @@ public class JdbcRules {
 
   public static List<RelOptRule> rules(JdbcConvention out) {
     return rules(out, RelFactories.LOGICAL_BUILDER);
+  }
+
+    /**
+     * for jdbc convention is not singleton, we need to
+     * get the jdbc#A -> jdbc#B ... format converter rule
+     * @param exist exist jdbc conventions
+     * @return converter rules
+     */
+  public static List<RelOptRule> rules(Set<JdbcConvention> exist, JdbcConvention newConvention) {
+    List<RelOptRule> rules = new ArrayList<>();
+    Convention fixedPlatform = GlobalInfo.getInstance().getFixedPlatform();
+    for (JdbcConvention convention : exist) {
+      if (convention.equals(fixedPlatform)) { // when fixed platform, only allow one direction convert
+        rules.add(new JdbcToJdbcConverterRule(newConvention, convention, RelFactories.LOGICAL_BUILDER));
+      } else if (newConvention.equals(fixedPlatform)) {
+        rules.add(new JdbcToJdbcConverterRule(convention, newConvention, RelFactories.LOGICAL_BUILDER));
+      } else {
+        rules.add(new JdbcToJdbcConverterRule(newConvention, convention, RelFactories.LOGICAL_BUILDER));
+        rules.add(new JdbcToJdbcConverterRule(convention, newConvention, RelFactories.LOGICAL_BUILDER));
+      }
+    }
+    return ImmutableList.copyOf(rules);
   }
 
   public static List<RelOptRule> rules(JdbcConvention out,

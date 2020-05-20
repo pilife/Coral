@@ -1847,6 +1847,12 @@ public abstract class RelOptUtil {
     RelOptRules.MATERIALIZATION_RULES.forEach(planner::addRule);
   }
 
+  @Experimental
+  public static void registerCoralRules(RelOptPlanner planner) {
+    // todo [coral] use hook to register rules for experiment
+    RelOptRules.CORAL_RULES.forEach(planner::addRule);
+  }
+
   private static void registerCalcRules(RelOptPlanner planner) {
     RelOptRules.CALC_RULES.forEach(planner::addRule);
   }

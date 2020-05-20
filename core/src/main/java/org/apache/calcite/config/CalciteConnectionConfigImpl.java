@@ -174,6 +174,54 @@ public class CalciteConnectionConfigImpl extends ConnectionConfigImpl
     return CalciteConnectionProperty.TYPE_COERCION.wrap(properties)
         .getBoolean();
   }
+
+  @Override
+  public boolean cacheEnabled() {
+    return CalciteConnectionProperty.CACHE_ENABLED.wrap(properties)
+            .getBoolean();
+  }
+
+  @Override
+  public String fixedPlatform() {
+    return CalciteConnectionProperty.FIXED_PLATFORM.wrap(properties)
+            .getString();
+  }
+
+  @Override
+  public int joinThreshold() {
+    return CalciteConnectionProperty.JOIN_THRESHOLD.wrap(properties)
+            .getInt();
+  }
+
+  @Override
+  public int heuristicThreshold() {
+    return CalciteConnectionProperty.HEURISTIC_THRESHOLD.wrap(properties)
+            .getInt();
+  }
+
+  @Override
+  public String sparkMasterNode() {
+    return CalciteConnectionProperty.SPARK_MASTER_NODE.wrap(properties)
+            .getString();
+  }
+
+  @Override
+  public int dqnBatchSize() {
+    return CalciteConnectionProperty.DQN_BATCH_SIZE.wrap(properties)
+            .getInt();
+  }
+
+  @Override
+  public int dqnEpochSize() {
+    return CalciteConnectionProperty.DQN_EPOCH_SIZE.wrap(properties)
+            .getInt();
+  }
+
+  @Override
+  public int dqnHiddenNum() {
+    return CalciteConnectionProperty.DQN_HIDDEN_NUM.wrap(properties)
+            .getInt();
+  }
 }
 
 // End CalciteConnectionConfigImpl.java

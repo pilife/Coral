@@ -2056,6 +2056,13 @@ public class RelBuilder {
     return join(joinType, conditions);
   }
 
+  public RelBuilder joinWithLRField(JoinRelType joinType, String l, String r) {
+    RexNode call = call(SqlStdOperatorTable.EQUALS,
+            field(2, 0, l),
+            field(2, 1, r));
+    return join(joinType, call);
+  }
+
   /** Creates a {@link Join} with {@link JoinRelType#SEMI}.
    *
    * <p>A semi-join is a form of join that combines two relational expressions

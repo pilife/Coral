@@ -435,9 +435,10 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     if (CalciteSystemProperty.ENABLE_COLLATION_TRAIT.value()) {
       planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
     }
-    RelOptUtil.registerDefaultRules(planner,
-        prepareContext.config().materializationsEnabled(),
-        enableBindable);
+//    RelOptUtil.registerDefaultRules(planner,
+//        prepareContext.config().materializationsEnabled(),
+//        enableBindable);
+    RelOptUtil.registerCoralRules(planner);
 
     final CalcitePrepare.SparkHandler spark = prepareContext.spark();
     if (spark.enabled()) {

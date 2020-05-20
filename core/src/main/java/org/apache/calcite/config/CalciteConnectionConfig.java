@@ -76,6 +76,16 @@ public interface CalciteConnectionConfig extends ConnectionConfig {
   String locale();
   /** @see CalciteConnectionProperty#TYPE_COERCION */
   boolean typeCoercion();
+
+  boolean cacheEnabled();
+  String fixedPlatform();
+  int joinThreshold();
+  int heuristicThreshold();
+  String sparkMasterNode();
+  int dqnBatchSize();
+  int dqnEpochSize();
+  int dqnHiddenNum();
+
 }
 
 // End CalciteConnectionConfig.java

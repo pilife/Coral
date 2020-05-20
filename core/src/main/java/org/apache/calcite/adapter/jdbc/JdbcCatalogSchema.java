@@ -94,7 +94,7 @@ public class JdbcCatalogSchema extends AbstractSchema {
     final SqlDialect dialect =
         JdbcSchema.createDialect(dialectFactory, dataSource);
     final JdbcConvention convention =
-        JdbcConvention.of(dialect, expression, name);
+        JdbcConvention.of(dialect, expression, dataSource, name);
     return new JdbcCatalogSchema(dataSource, dialect, convention, catalog);
   }
 

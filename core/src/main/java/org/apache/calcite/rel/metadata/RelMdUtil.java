@@ -388,12 +388,14 @@ public class RelMdUtil {
               && (((RexCall) pred).getOperator()
               == RelMdUtil.ARTIFICIAL_SELECTIVITY_FUNC)) {
         artificialSel *= RelMdUtil.getSelectivityValue(pred);
+      } else if (pred.isAlwaysTrue()){
+        sel *= 1.;
       } else if (pred.isA(SqlKind.EQUALS)) {
-        sel *= .15;
+        sel *= .0015; // origin 0.15
       } else if (pred.isA(SqlKind.COMPARISON)) {
-        sel *= .5;
+        sel *= .005; // origin 0.5
       } else {
-        sel *= .25;
+        sel *= .0025; // origin 0.25
       }
     }
 
@@ -717,9 +719,16 @@ public class RelMdUtil {
         return max;
       }
     }
-    double product = left * right;
-
-    return product * mq.getSelectivity(join, condition);
+//    Double selectivity = mq.getSelectivity(join, condition);
+//    if (left * selectivity < 1){
+//      return right ;
+//    }else if (right * selectivity < 1){
+//      return left ;
+//    }else {
+//      return left * right * selectivity;
+//    }
+//    return Math.max(left, right);
+    return left * right * Math.max(mq.getSelectivity(join, condition), 0.0015);
   }
 
   /** Returns an estimate of the number of rows returned by a semi-join. */

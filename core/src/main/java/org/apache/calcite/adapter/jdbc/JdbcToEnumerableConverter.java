@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.adapter.jdbc;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
@@ -62,6 +63,7 @@ import javax.sql.DataSource;
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
+@Slf4j
 public class JdbcToEnumerableConverter
     extends ConverterImpl
     implements EnumerableRel {
@@ -95,6 +97,7 @@ public class JdbcToEnumerableConverter
         (JdbcConvention) child.getConvention();
     SqlString sqlString = generateSql(jdbcConvention.dialect);
     String sql = sqlString.getSql();
+    log.info("final sql = \n{}", sql);
     if (CalciteSystemProperty.DEBUG.value()) {
       System.out.println("[" + sql + "]");
     }

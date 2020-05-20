@@ -16,15 +16,19 @@
  */
 package org.apache.calcite.adapter.jdbc;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -38,11 +42,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.ResultSetEnumerable;
-import org.apache.calcite.schema.ModifiableTable;
-import org.apache.calcite.schema.ScannableTable;
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.TranslatableTable;
+import org.apache.calcite.schema.*;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNodeList;
@@ -81,6 +81,19 @@ public class JdbcTable extends AbstractQueryableTable
   public final String jdbcTableName;
   public final Schema.TableType jdbcTableType;
 
+  // From TPC-H spec, table "Database Row Counts", for 1G sizing.
+  private static final ImmutableMap<String, Integer> TABLE_ROW_COUNTS =
+          ImmutableMap.<String, Integer>builder()
+                  .put("nation", 25)
+                  .put("region", 5)
+                  .put("customer", 150000)
+                  .put("part", 200000)
+                  .put("supplier", 10000)
+                  .put("lineitem", 6000000)
+                  .put("orders", 1500000)
+                  .put("partsupp", 800000)
+                  .build();
+
   JdbcTable(JdbcSchema jdbcSchema, String jdbcCatalogName,
       String jdbcSchemaName, String jdbcTableName,
       Schema.TableType jdbcTableType) {
@@ -90,6 +103,22 @@ public class JdbcTable extends AbstractQueryableTable
     this.jdbcSchemaName = jdbcSchemaName;
     this.jdbcTableName = Objects.requireNonNull(jdbcTableName);
     this.jdbcTableType = Objects.requireNonNull(jdbcTableType);
+    this.addAttr2GlobalInfo();
+  }
+
+  /**
+   * todo [coral] [P10]
+   * there is some things need to finish
+   * <ol>
+   *     <li>when system start, get all table in each schema by invoke {@linkplain JdbcSchema#getTableNames()} </li>
+   *     <li>insert the dataTypeFactory instance into jdbc schema so that we can invoke
+   *     {@linkplain #getRowType(RelDataTypeFactory)}</li>
+   * </ol>
+   */
+  private void addAttr2GlobalInfo(){
+    if (TABLE_ROW_COUNTS.containsKey(jdbcTableName)){
+//      getRowType(CalcitePrepare.Context).getFieldNames().forEach(name -> GlobalInfo.getInstance().addAttr(name));
+    }
   }
 
   public String toString() {
@@ -98,6 +127,16 @@ public class JdbcTable extends AbstractQueryableTable
 
   @Override public Schema.TableType getJdbcTableType() {
     return jdbcTableType;
+  }
+
+  public Statistic getStatistic() {
+    // todo currently: just use fixed tpc-h rows here, future make it dynamic
+    if (TABLE_ROW_COUNTS.containsKey(jdbcTableName)){
+      Integer rowCount = TABLE_ROW_COUNTS.get(jdbcTableName);
+      return Statistics.of(rowCount, ImmutableList.of());
+    }else {
+      return Statistics.UNKNOWN;
+    }
   }
 
   public RelDataType getRowType(RelDataTypeFactory typeFactory) {

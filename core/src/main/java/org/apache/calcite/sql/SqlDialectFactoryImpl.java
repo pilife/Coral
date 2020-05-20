@@ -18,36 +18,7 @@ package org.apache.calcite.sql;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.NullCollation;
-import org.apache.calcite.sql.dialect.AccessSqlDialect;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.sql.dialect.BigQuerySqlDialect;
-import org.apache.calcite.sql.dialect.CalciteSqlDialect;
-import org.apache.calcite.sql.dialect.Db2SqlDialect;
-import org.apache.calcite.sql.dialect.DerbySqlDialect;
-import org.apache.calcite.sql.dialect.FirebirdSqlDialect;
-import org.apache.calcite.sql.dialect.H2SqlDialect;
-import org.apache.calcite.sql.dialect.HiveSqlDialect;
-import org.apache.calcite.sql.dialect.HsqldbSqlDialect;
-import org.apache.calcite.sql.dialect.InfobrightSqlDialect;
-import org.apache.calcite.sql.dialect.InformixSqlDialect;
-import org.apache.calcite.sql.dialect.IngresSqlDialect;
-import org.apache.calcite.sql.dialect.InterbaseSqlDialect;
-import org.apache.calcite.sql.dialect.JethroDataSqlDialect;
-import org.apache.calcite.sql.dialect.LucidDbSqlDialect;
-import org.apache.calcite.sql.dialect.MssqlSqlDialect;
-import org.apache.calcite.sql.dialect.MysqlSqlDialect;
-import org.apache.calcite.sql.dialect.NeoviewSqlDialect;
-import org.apache.calcite.sql.dialect.NetezzaSqlDialect;
-import org.apache.calcite.sql.dialect.OracleSqlDialect;
-import org.apache.calcite.sql.dialect.ParaccelSqlDialect;
-import org.apache.calcite.sql.dialect.PhoenixSqlDialect;
-import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
-import org.apache.calcite.sql.dialect.RedshiftSqlDialect;
-import org.apache.calcite.sql.dialect.SnowflakeSqlDialect;
-import org.apache.calcite.sql.dialect.SparkSqlDialect;
-import org.apache.calcite.sql.dialect.SybaseSqlDialect;
-import org.apache.calcite.sql.dialect.TeradataSqlDialect;
-import org.apache.calcite.sql.dialect.VerticaSqlDialect;
+import org.apache.calcite.sql.dialect.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +73,8 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
       return new AccessSqlDialect(c);
     case "APACHE DERBY":
       return new DerbySqlDialect(c);
+    case "CLICKHOUSE":
+      return new ClickHouseSqlDialect(c);
     case "DBMS:CLOUDSCAPE":
       return new DerbySqlDialect(c);
     case "HIVE":
@@ -242,6 +215,8 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
       return BigQuerySqlDialect.DEFAULT;
     case CALCITE:
       return CalciteSqlDialect.DEFAULT;
+    case CLICKHOUSE:
+      return ClickHouseSqlDialect.DEFAULT;
     case DB2:
       return Db2SqlDialect.DEFAULT;
     case DERBY:

@@ -134,7 +134,7 @@ limitations under the License.
     <pig.version>0.16.0</pig.version>
     <postgresql.version>9.3-1102-jdbc41</postgresql.version>
     <quidem.version>0.9</quidem.version>
-    <scala.version>2.10.3</scala.version>
+    <scala.version>2.11.12</scala.version>
     <scott-data-hsqldb.version>0.1</scott-data-hsqldb.version>
     <servlet.version>4.0.1</servlet.version>
     <sketches.version>0.9.0</sketches.version>
@@ -144,6 +144,9 @@ limitations under the License.
     <tpcds.version>1.2</tpcds.version>
     <xalan.version>2.7.1</xalan.version>
     <xerces.version>2.9.1</xerces.version>
+    <nd4j.version>1.0.0-beta6</nd4j.version>
+    <rl4j.version>1.0.0-beta6</rl4j.version>
+    <nd4j.backend>nd4j-native-platform</nd4j.backend>
 
     <!-- Other properties (not version numbers) -->
     <!-- Java 1.8 does not support -html5, so override via profile for Java 1.8 -->
@@ -174,22 +177,11 @@ limitations under the License.
 
   <modules>
     <module>babel</module>
-    <module>cassandra</module>
     <module>core</module>
-    <module>druid</module>
-    <module>elasticsearch</module>
     <module>example</module>
-    <module>file</module>
-    <module>geode</module>
-    <module>kafka</module>
     <module>linq4j</module>
-    <module>mongodb</module>
-    <module>pig</module>
-    <module>piglet</module>
     <module>plus</module>
     <module>server</module>
-    <module>spark</module>
-    <module>splunk</module>
     <module>ubenchmark</module>
   </modules>
 
@@ -625,6 +617,16 @@ limitations under the License.
         <artifactId>kafka-clients</artifactId>
         <version>${kafka.client.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-platform</artifactId>
+        <version>${nd4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>rl4j-core</artifactId>
+        <version>${rl4j.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -801,7 +803,7 @@ limitations under the License.
               <goal>analyze-only</goal>
             </goals>
             <configuration>
-              <failOnWarning>true</failOnWarning>
+              <failOnWarning>false</failOnWarning>
             </configuration>
           </execution>
         </executions>

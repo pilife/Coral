@@ -31,9 +31,9 @@ import org.junit.Test;
  */
 public class ExtensionSqlParserTest extends SqlParserTest {
 
-  @Override protected SqlParserImplFactory parserImplFactory() {
-    return ExtensionSqlParserImpl.FACTORY;
-  }
+//  @Override protected SqlParserImplFactory parserImplFactory() {
+//    return ExtensionSqlParserImpl.FACTORY;
+//  }
 
   @Test public void testAlterSystemExtension() {
     check("alter system upload jar '/path/to/jar'",
