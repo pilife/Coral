@@ -36,6 +36,21 @@ import static org.apache.calcite.avatica.ConnectionConfigImpl.PropEnv;
  * Properties that may be specified on the JDBC connect string.
  */
 public enum CalciteConnectionProperty implements ConnectionProperty {
+
+  CACHE_ENABLED("cacheEnabled", Type.BOOLEAN, true, false),
+
+  FIXED_PLATFORM("fixedPlatform", Type.STRING, null, false),
+
+  DQN_THRESHOLD("dqnThreshold", Type.NUMBER, 4, false),
+
+  HEURISTIC_THRESHOLD("heuristicThreshold", Type.NUMBER, 4, false),
+
+  DQN_BATCH_SIZE("dqnBatchSize", Type.NUMBER, 4, false),
+
+  DQN_EPOCH_SIZE("dqnEpochSize", Type.NUMBER, 200, false),
+
+  DQN_HIDDEN_NUM("dqnHiddenNum", Type.NUMBER, 10, false),
+
   /** Whether approximate results from {@code COUNT(DISTINCT ...)} aggregate
    * functions are acceptable. */
   APPROXIMATE_DISTINCT_COUNT("approximateDistinctCount", Type.BOOLEAN, false,

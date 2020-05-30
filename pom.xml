@@ -126,24 +126,25 @@ limitations under the License.
     <maven-scm-provider.version>1.10.0</maven-scm-provider.version>
     <mockito.version>2.22.0</mockito.version>
     <mongo-java-driver.version>3.10.2</mongo-java-driver.version>
-    <mysql-driver.version>5.1.20</mysql-driver.version>
     <natty.version>0.13</natty.version>
     <opencsv.version>2.3</opencsv.version>
     <oracle-jdbc6-driver.version>11.2.0.2.0</oracle-jdbc6-driver.version>
     <owasp-dependency-check.version>5.2.1</owasp-dependency-check.version>
     <pig.version>0.16.0</pig.version>
-    <postgresql.version>9.3-1102-jdbc41</postgresql.version>
     <quidem.version>0.9</quidem.version>
-    <scala.version>2.10.3</scala.version>
+    <scala.version>2.11.12</scala.version>
     <scott-data-hsqldb.version>0.1</scott-data-hsqldb.version>
     <servlet.version>4.0.1</servlet.version>
     <sketches.version>0.9.0</sketches.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <spark.version>2.2.0</spark.version>
+    <spark.version>2.4.4</spark.version>
     <sqlline.version>1.8.0</sqlline.version>
     <tpcds.version>1.2</tpcds.version>
     <xalan.version>2.7.1</xalan.version>
     <xerces.version>2.9.1</xerces.version>
+    <nd4j.version>1.0.0-beta6</nd4j.version>
+    <rl4j.version>1.0.0-beta6</rl4j.version>
+    <nd4j.backend>nd4j-native-platform</nd4j.backend>
 
     <!-- Other properties (not version numbers) -->
     <!-- Java 1.8 does not support -html5, so override via profile for Java 1.8 -->
@@ -174,23 +175,11 @@ limitations under the License.
 
   <modules>
     <module>babel</module>
-    <module>cassandra</module>
     <module>core</module>
-    <module>druid</module>
-    <module>elasticsearch</module>
-    <module>example</module>
-    <module>file</module>
-    <module>geode</module>
-    <module>kafka</module>
+    <module>coral</module>
     <module>linq4j</module>
-    <module>mongodb</module>
-    <module>pig</module>
-    <module>piglet</module>
     <module>plus</module>
     <module>server</module>
-    <module>spark</module>
-    <module>splunk</module>
-    <module>ubenchmark</module>
   </modules>
 
   <!-- No dependencies here. Declare dependency VERSIONS in
@@ -253,7 +242,6 @@ limitations under the License.
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-pool2</artifactId>
         <version>${commons-pool2.version}</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>com.datastax.cassandra</groupId>
@@ -371,11 +359,6 @@ limitations under the License.
         <version>${airlift-tpch.version}</version>
       </dependency>
       <dependency>
-        <groupId>mysql</groupId>
-        <artifactId>mysql-connector-java</artifactId>
-        <version>${mysql-driver.version}</version>
-      </dependency>
-      <dependency>
         <groupId>net.hydromatic</groupId>
         <artifactId>aggdesigner-algorithm</artifactId>
         <version>${aggdesigner.version}</version>
@@ -472,11 +455,6 @@ limitations under the License.
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${mockito.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>${postgresql.version}</version>
       </dependency>
       <dependency>
         <groupId>org.scala-lang</groupId>
@@ -579,16 +557,6 @@ limitations under the License.
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-api</artifactId>
-        <version>${log4j2.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${log4j2.version}</version>
-      </dependency>
-      <dependency>
         <groupId>sqlline</groupId>
         <artifactId>sqlline</artifactId>
         <version>${sqlline.version}</version>
@@ -624,6 +592,16 @@ limitations under the License.
         <groupId>org.apache.kafka</groupId>
         <artifactId>kafka-clients</artifactId>
         <version>${kafka.client.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-platform</artifactId>
+        <version>${nd4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>rl4j-core</artifactId>
+        <version>${rl4j.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -801,7 +779,7 @@ limitations under the License.
               <goal>analyze-only</goal>
             </goals>
             <configuration>
-              <failOnWarning>true</failOnWarning>
+              <failOnWarning>false</failOnWarning>
             </configuration>
           </execution>
         </executions>

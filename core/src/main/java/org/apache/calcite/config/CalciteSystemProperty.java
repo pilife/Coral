@@ -45,6 +45,47 @@ public final class CalciteSystemProperty<T> {
    */
   private static final Properties PROPERTIES = loadProperties();
 
+  // todo [coral] [P10] use conf file path and read the config file to set the following properties
+  public static final CalciteSystemProperty<String> CORAL_CONF_DIR =
+          stringProperty("coral.conf.dir", "/Users/zhangyi/proj_dev/calcite/coral/src/main/resources/",
+                  ImmutableSet.of(
+                          "/Users/zhangyi/proj_dev/calcite/coral/src/main/resources/", // local
+                          "/home/zhangyi/")); // cluster
+
+  public static final CalciteSystemProperty<String> SPARK_MASTER_NODE =
+          stringProperty("coral.spark.master.node", "local[4]",
+                  ImmutableSet.of(
+                          "local[4]", // local
+                          "spark://simple31:7078")); // cluster
+
+  public static final CalciteSystemProperty<String> SPARK_JAR_PATH =
+          stringProperty("coral.spark.jar.path", "",
+                  ImmutableSet.of(
+                          "", // local
+                          "/home/zhangyi/coral.jar")); // cluster
+
+  public static final CalciteSystemProperty<String> SPARK_EXECUTOR_MEM =
+          stringProperty("coral.spark.executor.memory", "1g",
+                  ImmutableSet.of(
+                          "1g", // local
+                          "16g", // cluster
+                          "24g")); // cluster
+
+  public static final CalciteSystemProperty<Boolean> DQN_SAMPLE_ENABLED =
+          booleanProperty("coral.dqn.sample.enabled", false);
+
+  public static final CalciteSystemProperty<Boolean> DQN_MODEL_READY =
+          booleanProperty("coral.dqn.model.ready", true);
+
+  public static final CalciteSystemProperty<Integer> SPARK_NUMBER_PARTITIONS =
+          intProperty("coral.spark.partition.number", 96);
+
+  public static final CalciteSystemProperty<Integer> SPARK_MIGRATE_TIME_OUT =
+          intProperty("coral.spark.migrate.timeout", 60);
+
+  public static final CalciteSystemProperty<Integer> SPARK_BATCH_SIZE =
+          intProperty("coral.spark.batch.size", 5000);
+
   /**
    * Whether to run Calcite in debug mode.
    *
@@ -354,15 +395,21 @@ public final class CalciteSystemProperty<T> {
   }
 
   private static CalciteSystemProperty<String> stringProperty(
-      String key,
-      String defaultValue,
-      Set<String> allowedValues) {
+          String key,
+          String defaultValue,
+          Set<String> allowedValues) {
     return new CalciteSystemProperty<>(key, v -> {
       if (v == null) {
         return defaultValue;
       }
       String normalizedValue = v.toUpperCase(Locale.ROOT);
-      return allowedValues.contains(normalizedValue) ? normalizedValue : defaultValue;
+      if (allowedValues.contains(normalizedValue)) {
+        return normalizedValue;
+      } else if (allowedValues.contains(v)) {
+        return v;
+      } else {
+        return defaultValue;
+      }
     });
   }
 
@@ -391,7 +438,7 @@ public final class CalciteSystemProperty<T> {
           String newKey = deprecatedKey
               .replace("net.sf.saffron.", "calcite.")
               .replace("saffron.", "calcite.");
-          if (newKey.startsWith("calcite.")) {
+          if (newKey.startsWith("calcite.") || newKey.startsWith("coral.")) { // coral也要拥有姓名
             allProperties.setProperty(newKey, (String) prop.getValue());
           }
         });
