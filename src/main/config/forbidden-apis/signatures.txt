@@ -75,18 +75,18 @@ com.google.common.base.Joiner
 # Sets.newHashSet(Iterable) are still OK
 
 @defaultMessage Use "new ArrayList<>()"
-com.google.common.collect.Lists#newArrayList()
+#com.google.common.collect.Lists#newArrayList()
 
 @defaultMessage Use "new HashMap<>()"
-com.google.common.collect.Maps#newHashMap()
+#com.google.common.collect.Maps#newHashMap()
 
 @defaultMessage Use "new IdentityHashMap<>()"
-com.google.common.collect.Maps#newIdentityHashMap()
+#com.google.common.collect.Maps#newIdentityHashMap()
 
 @defaultMessage Use "new TreeMap<>()"
-com.google.common.collect.Maps#newTreeMap()
+#com.google.common.collect.Maps#newTreeMap()
 
 @defaultMessage Use "new HashSet<>()"
-com.google.common.collect.Sets#newHashSet()
+#com.google.common.collect.Sets#newHashSet()
 
 # End signatures.txt

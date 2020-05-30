@@ -34,4 +34,8 @@ nb-configuration.xml
 
 .mvn/wrapper/maven-wrapper.jar
 
+*.DS_Store
+*.model
+*.data
+
 # End .gitignore
