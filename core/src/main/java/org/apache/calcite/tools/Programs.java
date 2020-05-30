@@ -16,17 +16,15 @@
  */
 package org.apache.calcite.tools;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteSystemProperty;
-import org.apache.calcite.plan.RelOptCostImpl;
-import org.apache.calcite.plan.RelOptLattice;
-import org.apache.calcite.plan.RelOptMaterialization;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRules;
-import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.dqn.CostModel;
+import org.apache.calcite.plan.dqn.OptimizerMLP;
 import org.apache.calcite.plan.hep.HepMatchOrder;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
@@ -37,32 +35,10 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
-import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
-import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
-import org.apache.calcite.rel.rules.AggregateStarTableRule;
-import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
-import org.apache.calcite.rel.rules.FilterJoinRule;
-import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
-import org.apache.calcite.rel.rules.FilterTableScanRule;
-import org.apache.calcite.rel.rules.JoinAssociateRule;
-import org.apache.calcite.rel.rules.JoinCommuteRule;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
-import org.apache.calcite.rel.rules.LoptOptimizeJoinRule;
-import org.apache.calcite.rel.rules.MatchRule;
-import org.apache.calcite.rel.rules.MultiJoinOptimizeBushyRule;
-import org.apache.calcite.rel.rules.ProjectMergeRule;
-import org.apache.calcite.rel.rules.SemiJoinRule;
-import org.apache.calcite.rel.rules.SortProjectTransposeRule;
-import org.apache.calcite.rel.rules.SubQueryRemoveRule;
-import org.apache.calcite.rel.rules.TableScanRule;
+import org.apache.calcite.rel.rules.*;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,6 +58,19 @@ public class Programs {
   /** Program that expands sub-queries. */
   public static final Program SUB_QUERY_PROGRAM =
       subQuery(DefaultRelMetadataProvider.INSTANCE);
+
+  public static final ImmutableSet<RelOptRule> DQN_PRE_RULE_SET = ImmutableSet.of(
+          FilterMergeRule.INSTANCE,
+          ProjectMergeRule.INSTANCE,
+          ProjectJoinTransposeRule.INSTANCE,
+          FilterJoinRule.FILTER_ON_JOIN,
+          FilterProjectTransposeRule.INSTANCE
+  );
+
+  public static final ImmutableSet<RelOptRule> HEURISTIC_POST_RULE_SET = ImmutableSet.of(
+          ProjectMergeRule.INSTANCE,
+          ProjectJoinTransposeRule.INSTANCE
+  );
 
   public static final ImmutableSet<RelOptRule> RULE_SET =
       ImmutableSet.of(
@@ -235,6 +224,55 @@ public class Programs {
     };
   }
 
+  public static Program heuristicJoinOrder(final boolean bushy) {
+    return (planner, rel, requiredOutputTraits, materializations, lattices) -> {
+      final Program program;
+      // Create a program that gathers together joins as a MultiJoin.
+      final HepProgram hep = new HepProgramBuilder()
+              .addRuleInstance(FilterJoinRule.FILTER_ON_JOIN)
+              .addMatchOrder(HepMatchOrder.BOTTOM_UP)
+              .addRuleInstance(JoinToMultiJoinRule.INSTANCE)
+              .build();
+      final Program program1 =
+              of(hep, true, DefaultRelMetadataProvider.INSTANCE);
+
+      // Create a program that contains a rule to expand a MultiJoin
+      // into heuristically ordered joins.
+      // We use the rule set passed in, but remove JoinCommuteRule and
+      // JoinPushThroughJoinRule, because they cause exhaustive search.
+      final List<RelOptRule> list = Lists.newArrayList(planner.getRules());
+      list.removeAll(
+              ImmutableList.of(JoinCommuteRule.INSTANCE,
+                      JoinAssociateRule.INSTANCE,
+                      JoinPushThroughJoinRule.LEFT,
+                      JoinPushThroughJoinRule.RIGHT));
+      list.add(bushy
+              ? MultiJoinOptimizeBushyRule.INSTANCE
+              : LoptOptimizeJoinRule.INSTANCE);
+      final Program program2 = ofRules(list);
+
+      program = sequence(program1, program2);
+
+      return program.run(
+              planner, rel, requiredOutputTraits, materializations, lattices);
+    };
+  }
+
+  public static Program fixedPlatform() {
+    return (planner, rel, requiredOutputTraits, materializations, lattices) -> {
+      final List<RelOptRule> list = Lists.newArrayList(planner.getRules());
+//      list.removeAll(RelOptRules.CORAL_RULES);
+      list.removeAll(
+              ImmutableList.of(JoinCommuteRule.INSTANCE,
+                      JoinAssociateRule.INSTANCE,
+                      JoinPushThroughJoinRule.LEFT,
+                      JoinPushThroughJoinRule.RIGHT));
+      final Program program = ofRules(list);
+      return program.run(
+              planner, rel, requiredOutputTraits, materializations, lattices);
+    };
+  }
+
   public static Program calc(RelMetadataProvider metadataProvider) {
     return hep(RelOptRules.CALC_RULES, true, metadataProvider);
   }
@@ -252,6 +290,35 @@ public class Programs {
     return of(builder.build(), true, metadataProvider);
   }
 
+  /**
+   * create Program that
+   * program 1. push down predicate and project
+//   * program 2. implement the logic plan
+   */
+  public static Program dqnPreWork(RelMetadataProvider metadataProvider){
+    return (planner, rel, requiredOutputTraits, materializations, lattices) -> {
+      final Program program;
+      // create hep planner for program 1
+      final HepProgramBuilder builder = HepProgram.builder();
+      for (RelOptRule rule : DQN_PRE_RULE_SET) {
+        builder.addRuleInstance(rule);
+      }
+//      Set<JdbcConvention> jdbcConventionSet = JdbcConvention.conventionOfPlanner.get(planner);
+//      jdbcConventionSet.forEach( convention ->
+//              builder.addRuleInstance(new JdbcRules.JdbcFilterRule(convention, RelFactories.LOGICAL_BUILDER))
+//      );
+      final Program program1 =
+              of(builder.build(), true, metadataProvider);
+//      rel.getCluster().getPlanner()
+      // use default volcano for program2 to implement
+//      final List<RelOptRule> list = Lists.newArrayList();
+//      final Program program2 = ofRules(list);
+
+//      program = sequence(program1, program2);
+      return program1.run(planner, rel, requiredOutputTraits, materializations, lattices);
+    };
+  }
+
   public static Program getProgram() {
     return (planner, rel, requiredOutputTraits, materializations, lattices) ->
         null;
@@ -260,6 +327,11 @@ public class Programs {
   /** Returns the standard program used by Prepare. */
   public static Program standard() {
     return standard(DefaultRelMetadataProvider.INSTANCE);
+  }
+
+  /** Returns the dqn program used by Prepare. */
+  public static Program dqn() {
+    return dqn(DefaultRelMetadataProvider.INSTANCE);
   }
 
   /** Returns the standard program with user metadata provider. */
@@ -296,6 +368,21 @@ public class Programs {
         // Second planner pass to do physical "tweaks". This the first time
         // that EnumerableCalcRel is introduced.
         calc(metadataProvider));
+  }
+
+  /** Returns the standard program with user metadata provider. */
+  public static Program dqn(RelMetadataProvider metadataProvider) {
+    // todo [coral] gather jdbc rules
+    return sequence(subQuery(metadataProvider),
+            new DecorrelateProgram(),
+            new TrimFieldsProgram(),
+            // trivial predicate push down && implement
+            dqnPreWork(metadataProvider),
+            // join reorder && platform choice
+            new DQNProgram(),
+            // Second planner pass to do physical "tweaks". This the first time
+            // that EnumerableCalcRel is introduced.
+            calc(metadataProvider));
   }
 
   /** Program backed by a {@link RuleSet}. */
@@ -382,6 +469,20 @@ public class Programs {
       final RelBuilder relBuilder =
           RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
       return new RelFieldTrimmer(null, relBuilder).trim(rel);
+    }
+  }
+
+  /**
+   * Program that join reorder && join platform choice && implement plan to JDBC env
+   */
+  private static class DQNProgram implements Program {
+    public RelNode run(RelOptPlanner planner, RelNode rel,
+                       RelTraitSet requiredOutputTraits,
+                       List<RelOptMaterialization> materializations,
+                       List<RelOptLattice> lattices) {
+      final RelBuilder relBuilder =
+              RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
+      return OptimizerMLP.execute(rel, relBuilder, CostModel.COST_MODEL_1);
     }
   }
 }

@@ -16,22 +16,20 @@
  */
 package org.apache.calcite.prepare;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.adapter.jdbc.util.GlobalInfo;
 import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
-import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptLattice;
-import org.apache.calcite.plan.RelOptMaterialization;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptSchema;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.ViewExpanders;
+import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.dqn.CostModel;
+import org.apache.calcite.plan.dqn.EpisodeSample;
+import org.apache.calcite.plan.dqn.OptimizerMLP;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -50,12 +48,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.Wrapper;
 import org.apache.calcite.schema.impl.ModifiableViewTable;
 import org.apache.calcite.schema.impl.StarTable;
-import org.apache.calcite.sql.SqlExplain;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorCatalogReader;
@@ -69,9 +62,6 @@ import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.TryThreadLocal;
 import org.apache.calcite.util.trace.CalciteTimingTracer;
 import org.apache.calcite.util.trace.CalciteTrace;
-
-import com.google.common.collect.ImmutableList;
-
 import org.slf4j.Logger;
 
 import java.lang.reflect.Type;
@@ -185,7 +175,7 @@ public abstract class Prepare {
     };
     visitor.go(root.rel);
 
-    final Program program = getProgram();
+    final Program program = getProgram(root);
     final RelNode rootRel4 = program.run(
         planner, root.rel, desiredTraits, materializationList, latticeList);
     if (LOGGER.isDebugEnabled()) {
@@ -196,15 +186,56 @@ public abstract class Prepare {
     return root.withRel(rootRel4);
   }
 
-  protected Program getProgram() {
+  protected Program getProgram(RelRoot root) {
     // Allow a test to override the default program.
     final Holder<Program> holder = Holder.of(null);
     Hook.PROGRAM.run(holder);
     if (holder.get() != null) {
       return holder.get();
     }
+    // fixed platform
+    if (GlobalInfo.getInstance().getFixedPlatform() != null) {
+      // do fixed platform query
+      LOGGER.info("query with fixed platform = {}", GlobalInfo.getInstance().getFixedPlatform());
+      return Programs.fixedPlatform();
+    }
 
-    return Programs.standard();
+    // hybrid
+    CalciteConnectionConfig config = GlobalInfo.getInstance().getConfigThreadLocal().get();
+    int dqnThreshold = config.dqnThreshold();
+    int heuristicThreshold = config.heuristicThreshold();
+    final int joinCount = RelOptUtil.countJoins(root.rel) + 1;
+    if (OptimizerMLP.isAvailable()){// 根据join规模和优化器状态选择优化方式
+      if (joinCount > dqnThreshold){
+        LOGGER.info("Optimizer choice = DQN");
+        return Programs.dqn();
+      }else {
+        if (joinCount > heuristicThreshold){
+          LOGGER.info("Optimizer choice = HEURISTIC");// commonly dqnThreshold is less than heuristicThreshold so that won't be in there
+          return Programs.heuristicJoinOrder(true);
+        }else {
+          LOGGER.info("Optimizer choice = STANDARD");
+          return Programs.standard();
+        }
+      }
+    }else {
+      if (joinCount > heuristicThreshold){
+        LOGGER.info("Optimizer choice = HEURISTIC");
+        return Programs.heuristicJoinOrder(true);
+      }else {
+        LOGGER.info("Optimizer choice = STANDARD");
+        return Programs.standard();
+      }
+    }
+//    if (joinCount > joinThreshold && OptimizerMLP.isReady) { // 根据join规模和优化器状态选择优化方式 // 写得有点不直观，改成上面
+//      LOGGER.info("Optimizer choice = DQN");
+//      return Programs.dqn();
+//    } else if ((joinCount < heuristicThreshold && !OptimizerMLP.isReady) || joinCount <= joinThreshold) {
+//      LOGGER.info("Optimizer choice = STANDARD");
+//      return Programs.standard();
+//    } else {
+//      LOGGER.info("Optimizer choice = HEURISTIC");
+//      return Programs.heuristicJoinOrder(true);
   }
 
   protected RelTraitSet getDesiredRootTraitSet(RelRoot root) {
@@ -242,6 +273,7 @@ public abstract class Prepare {
       Class runtimeContextClass,
       SqlValidator validator,
       boolean needsValidation) {
+    this.timingTracer = new CalciteTimingTracer(LOGGER, "start prepare sql");
     init(runtimeContextClass);
 
     final SqlToRelConverter.ConfigBuilder builder =
@@ -329,7 +361,17 @@ public abstract class Prepare {
     if (!root.kind.belongsTo(SqlKind.DML)) {
       root = root.withKind(sqlNodeOriginal.getKind());
     }
-    return implement(root);
+    PreparedResult implement = implement(root);
+
+    // transform root to dqn training example && save it
+    if (CalciteSystemProperty.DQN_SAMPLE_ENABLED.value() && RelOptUtil.countJoins(root.rel) > 0) {
+      EpisodeSample.rel2MDP(root.rel, true, CostModel.COST_MODEL_1).mdp2DataFile(); // maybe concurrent process later
+      GlobalInfo.getQueryCount().incrementAndGet();
+      if (timingTracer != null) {
+        timingTracer.traceTime("end write sample");
+      }
+    }
+    return implement;
   }
 
   protected LogicalTableModify.Operation mapTableModOp(
