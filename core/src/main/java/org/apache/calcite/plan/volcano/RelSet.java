@@ -57,7 +57,7 @@ class RelSet {
    * is a multi-set. If multiple relational expressions in this set have the
    * same parent, there will be multiple entries.
    */
-  final List<RelNode> parents = new ArrayList<>();
+  final List<RelNode> parents = new ArrayList<>(); // 用作计算importance
   final List<RelSubset> subsets = new ArrayList<>();
 
   /**

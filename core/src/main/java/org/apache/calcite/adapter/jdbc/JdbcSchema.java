@@ -109,6 +109,7 @@ public class JdbcSchema implements Schema {
     this.schema = schema;
     this.tableMap = tableMap;
     this.snapshot = tableMap != null;
+    this.convention.setJdbcSchema(this);
   }
 
   public static JdbcSchema create(
@@ -132,7 +133,7 @@ public class JdbcSchema implements Schema {
         Schemas.subSchemaExpression(parentSchema, name, JdbcSchema.class);
     final SqlDialect dialect = createDialect(dialectFactory, dataSource);
     final JdbcConvention convention =
-        JdbcConvention.of(dialect, expression, name);
+        JdbcConvention.of(dialect, expression, dataSource, name);
     return new JdbcSchema(dataSource, dialect, convention, catalog, schema);
   }
 
@@ -474,6 +475,12 @@ public class JdbcSchema implements Schema {
     // This method is called during a cache refresh. We can take it as a signal
     // that we need to re-build our own cache.
     return getTableMap(!snapshot).keySet();
+  }
+
+  public Set<String> getTableNames(boolean force) {
+    // This method is called during a cache refresh. We can take it as a signal
+    // that we need to re-build our own cache.
+    return getTableMap(force).keySet();
   }
 
   protected Map<String, RelProtoDataType> getTypes() {

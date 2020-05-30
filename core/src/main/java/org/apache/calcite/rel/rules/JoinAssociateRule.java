@@ -42,7 +42,7 @@ import java.util.List;
  *
  * <p>We do not need a rule to convert (a JOIN (b JOIN c)) &rarr;
  * ((a JOIN b) JOIN c) because we have
- * {@link JoinCommuteRule}.
+ * {@link JoinCommuteRule} to collaborate.
  *
  * @see JoinCommuteRule
  */

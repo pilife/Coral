@@ -21,55 +21,7 @@ import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.interpreter.NoneToBindableConverterRule;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.plan.volcano.AbstractConverter;
-import org.apache.calcite.rel.rules.AbstractMaterializedViewRule;
-import org.apache.calcite.rel.rules.AggregateCaseToFilterRule;
-import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
-import org.apache.calcite.rel.rules.AggregateJoinTransposeRule;
-import org.apache.calcite.rel.rules.AggregateMergeRule;
-import org.apache.calcite.rel.rules.AggregateProjectMergeRule;
-import org.apache.calcite.rel.rules.AggregateProjectPullUpConstantsRule;
-import org.apache.calcite.rel.rules.AggregateReduceFunctionsRule;
-import org.apache.calcite.rel.rules.AggregateRemoveRule;
-import org.apache.calcite.rel.rules.AggregateStarTableRule;
-import org.apache.calcite.rel.rules.AggregateValuesRule;
-import org.apache.calcite.rel.rules.CalcMergeRule;
-import org.apache.calcite.rel.rules.CalcRemoveRule;
-import org.apache.calcite.rel.rules.DateRangeRules;
-import org.apache.calcite.rel.rules.ExchangeRemoveConstantKeysRule;
-import org.apache.calcite.rel.rules.FilterAggregateTransposeRule;
-import org.apache.calcite.rel.rules.FilterCalcMergeRule;
-import org.apache.calcite.rel.rules.FilterJoinRule;
-import org.apache.calcite.rel.rules.FilterMergeRule;
-import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
-import org.apache.calcite.rel.rules.FilterTableScanRule;
-import org.apache.calcite.rel.rules.FilterToCalcRule;
-import org.apache.calcite.rel.rules.IntersectToDistinctRule;
-import org.apache.calcite.rel.rules.JoinAssociateRule;
-import org.apache.calcite.rel.rules.JoinCommuteRule;
-import org.apache.calcite.rel.rules.JoinPushExpressionsRule;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.rules.MatchRule;
-import org.apache.calcite.rel.rules.MaterializedViewFilterScanRule;
-import org.apache.calcite.rel.rules.ProjectCalcMergeRule;
-import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
-import org.apache.calcite.rel.rules.ProjectMergeRule;
-import org.apache.calcite.rel.rules.ProjectRemoveRule;
-import org.apache.calcite.rel.rules.ProjectToCalcRule;
-import org.apache.calcite.rel.rules.ProjectToWindowRule;
-import org.apache.calcite.rel.rules.ProjectWindowTransposeRule;
-import org.apache.calcite.rel.rules.PruneEmptyRules;
-import org.apache.calcite.rel.rules.ReduceExpressionsRule;
-import org.apache.calcite.rel.rules.SemiJoinRule;
-import org.apache.calcite.rel.rules.SortJoinTransposeRule;
-import org.apache.calcite.rel.rules.SortProjectTransposeRule;
-import org.apache.calcite.rel.rules.SortRemoveConstantKeysRule;
-import org.apache.calcite.rel.rules.SortRemoveRule;
-import org.apache.calcite.rel.rules.SortUnionTransposeRule;
-import org.apache.calcite.rel.rules.TableScanRule;
-import org.apache.calcite.rel.rules.UnionMergeRule;
-import org.apache.calcite.rel.rules.UnionPullUpConstantsRule;
-import org.apache.calcite.rel.rules.UnionToDistinctRule;
-import org.apache.calcite.rel.rules.ValuesReduceRule;
+import org.apache.calcite.rel.rules.*;
 
 import com.google.common.collect.ImmutableList;
 
@@ -194,6 +146,26 @@ public class RelOptRules {
       AbstractMaterializedViewRule.INSTANCE_JOIN,
       AbstractMaterializedViewRule.INSTANCE_PROJECT_AGGREGATE,
       AbstractMaterializedViewRule.INSTANCE_AGGREGATE);
+
+  /**
+   * The calc rule set is public for use from {@link org.apache.calcite.tools.Programs}
+   */
+  public static final List<RelOptRule> CORAL_RULES = ImmutableList.of(
+//          SemiJoinRule.PROJECT,
+//          SemiJoinRule.JOIN,
+//          ProjectRemoveRule.INSTANCE,
+//          ProjectMergeRule.INSTANCE,
+          FilterMergeRule.INSTANCE,
+//          ProjectFilterTransposeRule.INSTANCE,
+          FilterProjectTransposeRule.INSTANCE,
+          ProjectJoinTransposeRule.INSTANCE,
+//          FilterJoinRule.JOIN,
+          FilterJoinRule.FILTER_ON_JOIN,
+//          JoinCommuteRule.INSTANCE,
+          JoinAssociateRule.INSTANCE
+//          JoinPushThroughJoinRule.RIGHT, // may not useful in out test
+//          JoinPushThroughJoinRule.LEFT
+  );
 }
 
 // End RelOptRules.java

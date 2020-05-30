@@ -574,8 +574,8 @@ public class SqlToRelConverter {
     }
     checkConvertedType(query, result);
 
-    if (SQL2REL_LOGGER.isDebugEnabled()) {
-      SQL2REL_LOGGER.debug(
+    if (SQL2REL_LOGGER.isInfoEnabled()) {
+      SQL2REL_LOGGER.info(
           RelOptUtil.dumpPlan("Plan after converting SqlNode to RelNode",
               result, SqlExplainFormat.TEXT,
               SqlExplainLevel.EXPPLAN_ATTRIBUTES));

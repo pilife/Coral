@@ -853,7 +853,7 @@ public class PlannerTest {
             EnumerableRules.ENUMERABLE_FILTER_RULE,
             EnumerableRules.ENUMERABLE_PROJECT_RULE);
 
-    JdbcConvention out = new JdbcConvention(null, null, "myjdbc");
+    JdbcConvention out = new JdbcConvention(null, null, null, "myjdbc");
     Program program1 = Programs.ofRules(
         new MockJdbcProjectRule(out), new MockJdbcTableRule(out));
 

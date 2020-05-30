@@ -18,6 +18,7 @@ package org.apache.calcite.jdbc;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.adapter.jdbc.util.GlobalInfo;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaFactory;
 import org.apache.calcite.avatica.AvaticaSite;
@@ -119,6 +120,7 @@ abstract class CalciteConnectionImpl
       JavaTypeFactory typeFactory) {
     super(driver, factory, url, info);
     CalciteConnectionConfig cfg = new CalciteConnectionConfigImpl(info);
+    GlobalInfo.getInstance().getConfigThreadLocal().set(cfg); // save the config
     this.prepareFactory = driver.prepareFactory;
     if (typeFactory != null) {
       this.typeFactory = typeFactory;
