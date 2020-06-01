@@ -176,7 +176,7 @@ limitations under the License.
   <modules>
     <module>babel</module>
     <module>core</module>
-    <module>coral</module>
+    <module>coral-example</module>
     <module>linq4j</module>
     <module>plus</module>
     <module>server</module>

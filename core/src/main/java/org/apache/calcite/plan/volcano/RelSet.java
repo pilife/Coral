@@ -237,6 +237,7 @@ class RelSet {
 
       // Need to first add to subset before adding the abstract converters (for others->subset)
       // since otherwise during register() the planner will try to add this subset again.
+      // see org.apache.calcite.plan.volcano.RelSet.add, it will create the subset and recursive into this method
       subsets.add(subset);
 
       addAbstractConverters(planner, cluster, subset, false);

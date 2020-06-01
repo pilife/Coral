@@ -147,15 +147,11 @@ public class CoralTest {
     }
 
 
-//    @Test
-//    public void test(){
-//        execute("SELECT c_custkey, c_nationkey, o_orderkey, p_partkey, p_name FROM postgres.customer as c " +
-//                "join clickhouse.orders as o on o.o_custkey = c.c_custkey " +
-//                "join clickhouse.lineitem as l on l.l_orderkey = o.o_orderkey " +
-//                "join memsql.part as p on p.p_partkey = l.l_partkey " +
-//                "where c.c_custkey <= 10 "
-//                + "and p.p_partkey = 17008 ");
-//    }
+    @Test
+    public void test(){
+        execute("SELECT * FROM postgres.nation as n " +
+                "join memsql.supplier as s on s.s_nationkey = n.n_nationkey ");
+    }
 
     public void HISTORY() {
         execute("SELECT o_custkey, c_name, c_nationkey, p_name FROM postgres.customer as c, " +

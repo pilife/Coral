@@ -637,12 +637,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
       ruleQueue.phaseCompleted(phase);
     }
-    if (LOGGER.isTraceEnabled()) {
+    if (LOGGER.isDebugEnabled()) {
       StringWriter sw = new StringWriter();
       final PrintWriter pw = new PrintWriter(sw);
       dump(pw);
       pw.flush();
-      LOGGER.trace(sw.toString());
+      LOGGER.debug(sw.toString());
     }
     RelNode cheapest = root.buildCheapestPlan(this);
     if (LOGGER.isDebugEnabled()) {
